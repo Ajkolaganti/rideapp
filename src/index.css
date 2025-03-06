@@ -1,0 +1,101 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom animations */
+@keyframes float {
+  0% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+  100% { transform: translateY(0px); }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 5px rgba(0, 243, 255, 0.3); }
+  50% { box-shadow: 0 0 20px rgba(0, 243, 255, 0.5); }
+  100% { box-shadow: 0 0 5px rgba(0, 243, 255, 0.3); }
+}
+
+@layer base {
+  body {
+    @apply antialiased text-gray-100 bg-deep-space;
+  }
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-sm border border-white/10 
+    hover:border-neon-blue/30 transition-colors duration-300;
+  }
+  
+  .auth-input {
+    @apply w-full px-4 py-3 bg-deep-space/50 border border-gray-700 rounded-lg 
+    text-gray-100 placeholder-gray-500 focus:outline-none focus:ring-2 
+    focus:ring-neon-blue/50 focus:border-transparent transition-all duration-200;
+  }
+
+  .auth-button {
+    @apply w-full px-6 py-3 text-center font-medium rounded-lg 
+    bg-gradient-to-r from-blue-600 to-purple-600 text-white 
+    hover:shadow-neon-hover transition-all duration-300;
+  }
+
+  .auth-button-alt {
+    @apply px-4 py-2 rounded-lg text-sm font-medium
+    bg-deep-space/50 border border-gray-700
+    hover:border-neon-blue/50 hover:bg-deep-space/70
+    transition-all duration-200;
+  }
+
+  .auth-button-alt-active {
+    @apply border-neon-blue bg-neon-blue/10 text-neon-blue;
+  }
+  
+  .neon-border {
+    @apply border border-neon-blue/30 shadow-neon;
+  }
+  
+  .hover-float {
+    @apply transition-all duration-300 ease-in-out hover:-translate-y-1 
+    hover:shadow-neon hover:border-neon-blue/30;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-400;
+  }
+
+  .nav-link {
+    @apply px-4 py-2 rounded-lg text-gray-300 hover:bg-deep-space/50 transition-all duration-200;
+  }
+
+  .mobile-nav-link {
+    @apply block w-full px-4 py-3 text-base font-medium text-gray-300 
+    hover:text-neon-blue hover:bg-deep-space/50 rounded-lg transition-all duration-200;
+  }
+}
+
+/* Performance optimizations */
+* {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  @apply w-2;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-deep-space;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-700 rounded-full hover:bg-gray-600 transition-colors;
+}
+
+/* Mobile optimizations */
+@media (max-width: 640px) {
+  .glass-card {
+    @apply backdrop-blur-md;
+  }
+}
