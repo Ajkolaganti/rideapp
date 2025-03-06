@@ -23,8 +23,9 @@
 
 @layer components {
   .glass-card {
-    @apply bg-white/5 backdrop-blur-sm border border-white/10 
-    hover:border-neon-blue/30 transition-colors duration-300;
+    @apply bg-white/5 backdrop-blur-md border border-white/10 
+    hover:border-neon-blue/30 transition-colors duration-300
+    shadow-xl;
   }
   
   .auth-input {
@@ -98,4 +99,26 @@
   .glass-card {
     @apply backdrop-blur-md;
   }
+}
+
+/* Add to your existing styles */
+@layer utilities {
+  .bg-deep-space-gradient {
+    background: linear-gradient(
+      to bottom,
+      rgba(2, 6, 23, 0.9),
+      rgba(2, 6, 23, 0.7),
+      rgba(2, 6, 23, 0.9)
+    );
+  }
+}
+
+/* Add a new animation for the hero section */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.hero-content {
+  animation: fadeIn 1s ease-out;
 }

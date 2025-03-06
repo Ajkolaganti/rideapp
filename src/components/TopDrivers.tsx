@@ -135,72 +135,85 @@ export function TopDrivers() {
   }
 
   return (
-    <div className="mt-16">
-      <div className="text-center mb-12">
-        <h2 className="text-3xl font-bold gradient-text mb-4">
-          Available Drivers
-        </h2>
-        <p className="text-gray-400">
-          Drivers available in the next 30 minutes
-        </p>
+    <div className="relative">
+      <div 
+        className="absolute inset-0 bg-cover bg-center"
+        style={{
+          backgroundImage: 'url(/car-ride.jpg)',
+        }}
+      >
+        <div className="absolute inset-0 bg-deep-space/95 backdrop-blur-sm" />
       </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {drivers.map((driver) => (
-          <div key={driver.id} className="glass-card rounded-2xl p-6 hover-float">
-            <div className="flex items-center mb-6">
-              <div className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-600/20 to-purple-600/20 
-                flex items-center justify-center">
-                <span className="text-2xl font-semibold text-neon-blue">
-                  {driver.name.charAt(0)}
-                </span>
-              </div>
-              <div className="ml-4">
-                <div className="flex items-center space-x-2">
-                  <h3 className="text-lg font-semibold text-gray-100">
-                    {driver.name}
-                  </h3>
-                  {driver.is_subscribed && (
-                    <Shield className="w-4 h-4 text-neon-blue" />
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <div className="flex items-center text-yellow-400">
-                    <Star className="w-4 h-4 fill-current" />
-                    <span className="ml-1 text-sm">{driver.rides_offered}</span>
-                  </div>
-                  {driver.is_on_ride && (
-                    <span className="inline-flex items-center px-2 py-1 rounded-full text-xs 
-                      font-medium bg-green-900/20 text-green-400">
-                      <Activity className="w-3 h-3 mr-1" />
-                      On a ride
-                    </span>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center text-gray-300">
-                <Car className="w-4 h-4 mr-2 text-neon-blue" />
-                {driver.car_model}
-              </div>
-
-              {driver.availability?.[0] && (
-                <>
-                  <div className="flex items-center text-gray-300">
-                    <MapPin className="w-4 h-4 mr-2 text-neon-blue" />
-                    {driver.availability[0].from_area} → {driver.availability[0].to_area}
-                  </div>
-                  <div className="flex items-center text-gray-300">
-                    <Clock className="w-4 h-4 mr-2 text-neon-blue" />
-                    Available at {format(parseISO(`2000-01-01T${driver.availability[0].start_time}`), 'h:mm a')}
-                  </div>
-                </>
-              )}
-            </div>
+      
+      <div className="relative z-10">
+        <div className="mt-16">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold gradient-text mb-4">
+              Available Drivers
+            </h2>
+            <p className="text-gray-400">
+              Drivers available in the next 30 minutes
+            </p>
           </div>
-        ))}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {drivers.map((driver) => (
+              <div key={driver.id} className="glass-card rounded-2xl p-6 hover-float">
+                <div className="flex items-center mb-6">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-600/20 to-purple-600/20 
+                    flex items-center justify-center">
+                    <span className="text-2xl font-semibold text-neon-blue">
+                      {driver.name.charAt(0)}
+                    </span>
+                  </div>
+                  <div className="ml-4">
+                    <div className="flex items-center space-x-2">
+                      <h3 className="text-lg font-semibold text-gray-100">
+                        {driver.name}
+                      </h3>
+                      {driver.is_subscribed && (
+                        <Shield className="w-4 h-4 text-neon-blue" />
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <div className="flex items-center text-yellow-400">
+                        <Star className="w-4 h-4 fill-current" />
+                        <span className="ml-1 text-sm">{driver.rides_offered}</span>
+                      </div>
+                      {driver.is_on_ride && (
+                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs 
+                          font-medium bg-green-900/20 text-green-400">
+                          <Activity className="w-3 h-3 mr-1" />
+                          On a ride
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-3">
+                  <div className="flex items-center text-gray-300">
+                    <Car className="w-4 h-4 mr-2 text-neon-blue" />
+                    {driver.car_model}
+                  </div>
+
+                  {driver.availability?.[0] && (
+                    <>
+                      <div className="flex items-center text-gray-300">
+                        <MapPin className="w-4 h-4 mr-2 text-neon-blue" />
+                        {driver.availability[0].from_area} → {driver.availability[0].to_area}
+                      </div>
+                      <div className="flex items-center text-gray-300">
+                        <Clock className="w-4 h-4 mr-2 text-neon-blue" />
+                        Available at {format(parseISO(`2000-01-01T${driver.availability[0].start_time}`), 'h:mm a')}
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     </div>
   );

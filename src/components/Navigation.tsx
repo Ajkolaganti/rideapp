@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Car, Menu, X, LogOut } from 'lucide-react';
 import { useAuth } from './auth/AuthProvider';
 import { supabase } from '../lib/supabase';
@@ -8,6 +8,7 @@ export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDriver, setIsDriver] = useState(false);
   const { user, signOut } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     const checkDriverStatus = async () => {
@@ -42,6 +43,14 @@ export function Navigation() {
     }
   };
 
+  const handleProtectedRoute = (path: string) => {
+    if (!user) {
+      navigate('/auth');
+    } else {
+      navigate(path);
+    }
+  };
+
   return (
     <nav className="fixed w-full top-0 z-50">
       <div className="glass-card backdrop-blur-lg border-b border-white/5">
@@ -53,7 +62,7 @@ export function Navigation() {
                 <div className="p-2 rounded-full bg-gradient-to-r from-blue-600/20 to-purple-600/20">
                   <Car className="w-6 h-6 text-neon-blue group-hover:animate-pulse" />
                 </div>
-                <span className="ml-2 text-xl font-bold gradient-text">RideShare</span>
+                <span className="ml-2 text-xl font-bold gradient-text">RideMate</span>
               </Link>
             </div>
 
@@ -86,18 +95,24 @@ export function Navigation() {
                 </>
               ) : (
                 <>
-                  <Link
-                    to="/auth"
+                  <button
+                    onClick={() => handleProtectedRoute('/find-ride')}
                     className="nav-link hover:text-neon-blue transition-colors"
                   >
-                    Sign In
-                  </Link>
+                    Find a Ride
+                  </button>
+                  <button
+                    onClick={() => handleProtectedRoute('/driver-dashboard')}
+                    className="nav-link hover:text-neon-blue transition-colors"
+                  >
+                    Offer Rides
+                  </button>
                   <Link
                     to="/auth"
                     className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 
                     text-white hover:shadow-neon-hover transition-all duration-200"
                   >
-                    Get Started
+                    Sign In
                   </Link>
                 </>
               )}
@@ -155,19 +170,30 @@ export function Navigation() {
                 </>
               ) : (
                 <>
-                  <Link
-                    to="/auth"
+                  <button
+                    onClick={() => {
+                      handleProtectedRoute('/find-ride');
+                      setIsMenuOpen(false);
+                    }}
                     className="mobile-nav-link"
-                    onClick={() => setIsMenuOpen(false)}
                   >
-                    Sign In
-                  </Link>
+                    Find a Ride
+                  </button>
+                  <button
+                    onClick={() => {
+                      handleProtectedRoute('/driver-dashboard');
+                      setIsMenuOpen(false);
+                    }}
+                    className="mobile-nav-link"
+                  >
+                    Offer Rides
+                  </button>
                   <Link
                     to="/auth"
                     className="mobile-nav-link bg-gradient-to-r from-blue-600 to-purple-600"
                     onClick={() => setIsMenuOpen(false)}
                   >
-                    Get Started
+                    Sign In
                   </Link>
                 </>
               )}

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Car, Search, MessageCircle, Star, Zap } from 'lucide-react';
 import { AuthProvider } from './components/auth/AuthProvider';
@@ -10,6 +10,7 @@ import { DriverDashboard } from './components/DriverDashboard';
 import { FindRide } from './components/FindRide';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { Driver } from './types';
+import { supabase } from './lib/supabase';
 
 const initialDrivers: Driver[] = [
   {
@@ -43,10 +44,27 @@ const initialDrivers: Driver[] = [
 function App() {
   const [drivers, setDrivers] = useLocalStorage<Driver[]>('drivers', initialDrivers);
 
+  useEffect(() => {
+    // ... existing driver fetching logic
+  }, []);
+
   return (
     <AuthProvider>
       <Router>
-        <div className="min-h-screen bg-deep-space text-white">
+        {/* Global Background */}
+        <div className="fixed inset-0 -z-10">
+          <div 
+            className="absolute inset-0 bg-cover bg-center bg-no-repeat"
+            style={{
+              backgroundImage: 'url(/car-ride.jpg)',
+              backgroundPosition: 'center 25%'
+            }}
+          />
+          <div className="absolute inset-0 bg-deep-space/95 backdrop-blur-[2px]" />
+        </div>
+
+        {/* App Content */}
+        <div className="relative min-h-screen">
           <Navigation />
           
           <Routes>
@@ -56,7 +74,7 @@ function App() {
                 <div 
                   className="relative bg-cover bg-center h-screen"
                   style={{
-                    backgroundImage: 'url("https://images.unsplash.com/photo-1451187580459-43490279c0fa?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80")',
+                    backgroundImage: 'url("/car-ride.jpg")',
                   }}
                 >
                   <div className="absolute inset-0 bg-deep-space bg-opacity-70 backdrop-blur-sm" />

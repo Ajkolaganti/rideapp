@@ -6,7 +6,7 @@ import { format } from 'date-fns';
 import { Driver } from '../types';
 import { loadStripe } from '@stripe/stripe-js';
 
-const stripePromise = loadStripe('pk_test_your_key');
+const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 
 interface DriverDashboardProps {
   drivers: Driver[];
@@ -32,6 +32,7 @@ export function DriverDashboard({ drivers, setDrivers }: DriverDashboardProps) {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [subscriptionLoading, setSubscriptionLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,208 +113,244 @@ export function DriverDashboard({ drivers, setDrivers }: DriverDashboardProps) {
     }
   };
 
-  const handleSubscribe = async () => {
-    const stripe = await stripePromise;
-    // In a real app, you would create a session on your backend
-    // This is just a mock implementation
-    alert('Subscription successful! You can now offer unlimited rides.');
+  const handleSubscription = async () => {
+    setSubscriptionLoading(true);
+    try {
+      const stripe = await stripePromise;
+      if (!stripe) {
+        throw new Error('Stripe failed to initialize');
+      }
+
+      // Create checkout session
+      const { data: session, error: sessionError } = await supabase
+        .from('create_checkout_session')
+        .select('session_id')
+        .single();
+
+      if (sessionError) {
+        throw sessionError;
+      }
+
+      // Redirect to checkout
+      const result = await stripe.redirectToCheckout({
+        sessionId: session.session_id,
+      });
+
+      if (result.error) {
+        throw result.error;
+      }
+    } catch (error) {
+      console.error('Error in subscription process:', error);
+      setError(error instanceof Error ? error.message : 'Failed to process subscription');
+    } finally {
+      setSubscriptionLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen pt-20 pb-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-12">
-          <h1 className="text-4xl font-bold gradient-text mb-4">
-            Offer a Ride
-          </h1>
-          <p className="text-gray-400">
-            Share your journey and help others reach their destination
-          </p>
-        </div>
+    <div className="min-h-screen pt-16">
+      <div 
+        className="relative bg-cover bg-center py-12"
+        style={{
+          backgroundImage: 'url(/car-ride.jpg)',
+        }}
+      >
+        <div className="absolute inset-0 bg-deep-space/90 backdrop-blur-sm" />
+        
+        <div className="max-w-4xl mx-auto">
+          <div className="text-center mb-12">
+            <h1 className="text-4xl font-bold gradient-text mb-4">
+              Offer a Ride
+            </h1>
+            <p className="text-gray-400">
+              Share your journey and help others reach their destination
+            </p>
+          </div>
 
-        <div className="glass-card rounded-2xl p-6 md:p-8 space-y-8">
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Personal Information */}
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold gradient-text">Driver Details</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="auth-input"
-                    placeholder="John Doe"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Contact Number
-                  </label>
-                  <input
-                    type="tel"
-                    required
-                    value={formData.contact}
-                    onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
-                    className="auth-input"
-                    placeholder="+1234567890"
-                  />
-                </div>
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    Car Model
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.carModel}
-                    onChange={(e) => setFormData({ ...formData, carModel: e.target.value })}
-                    className="auth-input"
-                    placeholder="Tesla Model 3"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {/* Ride Details */}
-            <div className="space-y-6">
-              <h2 className="text-xl font-semibold gradient-text">Ride Details</h2>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    <MapPin className="w-4 h-4 inline-block mr-1" />
-                    From Area
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.fromArea}
-                    onChange={(e) => setFormData({ ...formData, fromArea: e.target.value })}
-                    className="auth-input"
-                    placeholder="Enter pickup area"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    <MapPin className="w-4 h-4 inline-block mr-1" />
-                    To Area
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.toArea}
-                    onChange={(e) => setFormData({ ...formData, toArea: e.target.value })}
-                    className="auth-input"
-                    placeholder="Enter drop-off area"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-300 mb-2">
-                    <Calendar className="w-4 h-4 inline-block mr-1" />
-                    Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={formData.date}
-                    onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                    className="auth-input"
-                    min={format(new Date(), 'yyyy-MM-dd')}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
+          <div className="glass-card rounded-2xl p-6 md:p-8 space-y-8">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {/* Personal Information */}
+              <div className="space-y-6">
+                <h2 className="text-xl font-semibold gradient-text">Driver Details</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      <Clock className="w-4 h-4 inline-block mr-1" />
-                      Start Time
+                      Full Name
                     </label>
                     <input
-                      type="time"
+                      type="text"
                       required
-                      value={formData.startTime}
-                      onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                      value={formData.name}
+                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                       className="auth-input"
+                      placeholder="John Doe"
                     />
                   </div>
                   <div>
                     <label className="block text-sm font-medium text-gray-300 mb-2">
-                      <Clock className="w-4 h-4 inline-block mr-1" />
-                      End Time
+                      Contact Number
                     </label>
                     <input
-                      type="time"
+                      type="tel"
                       required
-                      value={formData.endTime}
-                      onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                      value={formData.contact}
+                      onChange={(e) => setFormData({ ...formData, contact: e.target.value })}
                       className="auth-input"
+                      placeholder="+1234567890"
+                    />
+                  </div>
+                  <div className="md:col-span-2">
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Car Model
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.carModel}
+                      onChange={(e) => setFormData({ ...formData, carModel: e.target.value })}
+                      className="auth-input"
+                      placeholder="Tesla Model 3"
                     />
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* Discount Option */}
-            <div className="space-y-4">
-              <h2 className="text-xl font-semibold gradient-text flex items-center">
-                <Percent className="w-5 h-5 mr-2" />
-                Offer Discount
-              </h2>
-              <div className="flex items-center space-x-4">
-                <label className="inline-flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={formData.discount.enabled}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      discount: {
-                        ...formData.discount,
-                        enabled: e.target.checked
-                      }
-                    })}
-                    className="form-checkbox h-5 w-5 text-neon-blue rounded border-gray-700 bg-deep-space/50
-                    focus:ring-neon-blue focus:ring-offset-0"
-                  />
-                  <span className="ml-2 text-gray-300">Enable discount</span>
-                </label>
-                {formData.discount.enabled && (
-                  <input
-                    type="number"
-                    min="0"
-                    max="100"
-                    value={formData.discount.percentage}
-                    onChange={(e) => setFormData({
-                      ...formData,
-                      discount: {
-                        ...formData.discount,
-                        percentage: parseInt(e.target.value)
-                      }
-                    })}
-                    className="auth-input w-24"
-                    placeholder="%"
-                  />
-                )}
+              {/* Ride Details */}
+              <div className="space-y-6">
+                <h2 className="text-xl font-semibold gradient-text">Ride Details</h2>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <MapPin className="w-4 h-4 inline-block mr-1" />
+                      From Area
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.fromArea}
+                      onChange={(e) => setFormData({ ...formData, fromArea: e.target.value })}
+                      className="auth-input"
+                      placeholder="Enter pickup area"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <MapPin className="w-4 h-4 inline-block mr-1" />
+                      To Area
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={formData.toArea}
+                      onChange={(e) => setFormData({ ...formData, toArea: e.target.value })}
+                      className="auth-input"
+                      placeholder="Enter drop-off area"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      <Calendar className="w-4 h-4 inline-block mr-1" />
+                      Date
+                    </label>
+                    <input
+                      type="date"
+                      required
+                      value={formData.date}
+                      onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                      className="auth-input"
+                      min={format(new Date(), 'yyyy-MM-dd')}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <Clock className="w-4 h-4 inline-block mr-1" />
+                        Start Time
+                      </label>
+                      <input
+                        type="time"
+                        required
+                        value={formData.startTime}
+                        onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                        className="auth-input"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-300 mb-2">
+                        <Clock className="w-4 h-4 inline-block mr-1" />
+                        End Time
+                      </label>
+                      <input
+                        type="time"
+                        required
+                        value={formData.endTime}
+                        onChange={(e) => setFormData({ ...formData, endTime: e.target.value })}
+                        className="auth-input"
+                      />
+                    </div>
+                  </div>
+                </div>
               </div>
-            </div>
 
-            {error && (
-              <div className="flex items-center space-x-2 text-red-400 bg-red-900/20 p-4 rounded-lg">
-                <AlertCircle className="w-5 h-5" />
-                <p>{error}</p>
+              {/* Discount Option */}
+              <div className="space-y-4">
+                <h2 className="text-xl font-semibold gradient-text flex items-center">
+                  <Percent className="w-5 h-5 mr-2" />
+                  Offer Discount
+                </h2>
+                <div className="flex items-center space-x-4">
+                  <label className="inline-flex items-center">
+                    <input
+                      type="checkbox"
+                      checked={formData.discount.enabled}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        discount: {
+                          ...formData.discount,
+                          enabled: e.target.checked
+                        }
+                      })}
+                      className="form-checkbox h-5 w-5 text-neon-blue rounded border-gray-700 bg-deep-space/50
+                      focus:ring-neon-blue focus:ring-offset-0"
+                    />
+                    <span className="ml-2 text-gray-300">Enable discount</span>
+                  </label>
+                  {formData.discount.enabled && (
+                    <input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={formData.discount.percentage}
+                      onChange={(e) => setFormData({
+                        ...formData,
+                        discount: {
+                          ...formData.discount,
+                          percentage: parseInt(e.target.value)
+                        }
+                      })}
+                      className="auth-input w-24"
+                      placeholder="%"
+                    />
+                  )}
+                </div>
               </div>
-            )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className={`auth-button ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
-            >
-              {loading ? 'Creating...' : 'Create Ride Offer'}
-            </button>
-          </form>
+              {error && (
+                <div className="flex items-center space-x-2 text-red-400 bg-red-900/20 p-4 rounded-lg">
+                  <AlertCircle className="w-5 h-5" />
+                  <p>{error}</p>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className={`auth-button ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+              >
+                {loading ? 'Creating...' : 'Create Ride Offer'}
+              </button>
+            </form>
+          </div>
         </div>
       </div>
     </div>
