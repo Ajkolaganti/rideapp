@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from './auth/AuthProvider';
 import { supabase } from '../lib/supabase';
-import { Calendar, Clock, MapPin, Percent, AlertCircle } from 'lucide-react';
-import { format } from 'date-fns';
+import { Calendar, Clock, MapPin, Percent, AlertCircle, Phone, MessageCircle } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 import { Driver } from '../types';
 import { loadStripe } from '@stripe/stripe-js';
 
@@ -11,6 +11,18 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY);
 interface DriverDashboardProps {
   drivers: Driver[];
   setDrivers: (drivers: Driver[]) => void;
+}
+
+interface RideRequest {
+  id: string;
+  rider_name: string;
+  contact: string;
+  from_area: string;
+  to_area: string;
+  date: string;
+  start_time: string;
+  end_time: string;
+  status: 'pending' | 'accepted' | 'completed';
 }
 
 export function DriverDashboard({ drivers, setDrivers }: DriverDashboardProps) {
@@ -33,6 +45,88 @@ export function DriverDashboard({ drivers, setDrivers }: DriverDashboardProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [subscriptionLoading, setSubscriptionLoading] = useState(false);
+  const [rideRequests, setRideRequests] = useState<RideRequest[]>([]);
+  const [requestsLoading, setRequestsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchRideRequests = async () => {
+      try {
+        setRequestsLoading(true);
+        console.log('Starting to fetch ride requests...');
+
+        // First verify that the current user is a driver
+        const { data: driverData, error: driverError } = await supabase
+          .from('drivers')
+          .select('id')
+          .eq('id', user?.id)
+          .single();
+
+        if (driverError || !driverData) {
+          console.error('Not authorized as driver:', driverError);
+          return;
+        }
+
+        const today = new Date();
+        const formattedDate = format(today, 'yyyy-MM-dd');
+        console.log('Fetching requests from date:', formattedDate);
+
+        // Fetch ride requests
+        const { data, error } = await supabase
+          .from('ride_requests')
+          .select(`
+            id,
+            rider_name,
+            contact,
+            from_area,
+            to_area,
+            date,
+            start_time,
+            end_time,
+            status
+          `)
+          .eq('status', 'pending')
+          .gte('date', formattedDate)
+          .order('date', { ascending: true });
+
+        if (error) {
+          console.error('Error fetching ride requests:', error);
+          throw error;
+        }
+
+        console.log('Fetched ride requests:', data);
+        setRideRequests(data || []);
+      } catch (err) {
+        console.error('Error in fetchRideRequests:', err);
+      } finally {
+        setRequestsLoading(false);
+      }
+    };
+
+    if (user) {
+      fetchRideRequests();
+    }
+
+    // Set up real-time subscription
+    const subscription = supabase
+      .channel('ride_requests_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'ride_requests',
+          filter: 'status=eq.pending'
+        }, 
+        (payload) => {
+          console.log('Real-time update received:', payload);
+          fetchRideRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [user]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,6 +241,73 @@ export function DriverDashboard({ drivers, setDrivers }: DriverDashboardProps) {
     }
   };
 
+  const RideRequestsSection = () => (
+    <div className="mb-12">
+      <h2 className="text-2xl font-bold gradient-text mb-6">Ride Requests</h2>
+      {requestsLoading ? (
+        <div className="glass-card rounded-2xl p-6 text-center">
+          <div className="animate-pulse text-neon-blue">Loading ride requests...</div>
+        </div>
+      ) : rideRequests.length === 0 ? (
+        <div className="glass-card rounded-2xl p-6 text-center">
+          <p className="text-gray-400">No pending ride requests available.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {rideRequests.map((request) => (
+            <div key={request.id} className="glass-card rounded-2xl p-6 hover-float">
+              <div className="flex justify-between items-start mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-100">
+                    {request.rider_name}
+                  </h3>
+                  <p className="text-sm text-gray-400">
+                    {format(parseISO(request.date), 'MMM d, yyyy')}
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-3 mb-4">
+                <div className="flex items-center text-gray-300">
+                  <MapPin className="w-4 h-4 mr-2 text-neon-blue" />
+                  {request.from_area} → {request.to_area}
+                </div>
+                <div className="flex items-center text-gray-300">
+                  <Clock className="w-4 h-4 mr-2 text-neon-blue" />
+                  {format(parseISO(`2000-01-01T${request.start_time}`), 'h:mm a')} - 
+                  {format(parseISO(`2000-01-01T${request.end_time}`), 'h:mm a')}
+                </div>
+              </div>
+
+              <div className="flex space-x-3">
+                <a
+                  href={`tel:${request.contact}`}
+                  className="flex-1 flex items-center justify-center p-2 rounded-lg 
+                  bg-deep-space/50 text-gray-300 hover:text-neon-blue 
+                  hover:bg-deep-space/70 transition-all duration-200"
+                >
+                  <Phone className="w-4 h-4 mr-2" />
+                  <span>Call</span>
+                </a>
+                <a
+                  href={`https://wa.me/${request.contact}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex-1 flex items-center justify-center p-2 rounded-lg 
+                  bg-deep-space/50 text-gray-300 hover:text-neon-blue 
+                  hover:bg-deep-space/70 transition-all duration-200"
+                >
+                  <MessageCircle className="w-4 h-4 mr-2" />
+                  <span>Message</span>
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="min-h-screen pt-16">
       <div 
@@ -166,6 +327,8 @@ export function DriverDashboard({ drivers, setDrivers }: DriverDashboardProps) {
               Share your journey and help others reach their destination
             </p>
           </div>
+
+          <RideRequestsSection />
 
           <div className="glass-card rounded-2xl p-6 md:p-8 space-y-8">
             <form onSubmit={handleSubmit} className="space-y-6">

@@ -8,9 +8,11 @@ import { PrivateRoute } from './components/auth/PrivateRoute';
 import { TopDrivers } from './components/TopDrivers';
 import { DriverDashboard } from './components/DriverDashboard';
 import { FindRide } from './components/FindRide';
+import { RequestRide } from './components/RequestRide';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { Driver } from './types';
 import { supabase } from './lib/supabase';
+import { Home } from './components/Home';
 
 const initialDrivers: Driver[] = [
   {
@@ -68,89 +70,31 @@ function App() {
           <Navigation />
           
           <Routes>
-            <Route path="/" element={
-              <>
-                {/* Hero Section */}
-                <div 
-                  className="relative bg-cover bg-center h-screen"
-                  style={{
-                    backgroundImage: 'url("/car-ride.jpg")',
-                  }}
-                >
-                  <div className="absolute inset-0 bg-deep-space bg-opacity-70 backdrop-blur-sm" />
-                  <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full">
-                    <div className="flex flex-col justify-center h-full">
-                      <h1 className="text-4xl md:text-7xl font-bold mb-6 gradient-text animate-float">
-                        Future of Ride Sharing
-                      </h1>
-                      <p className="text-xl text-gray-300 mb-8 max-w-2xl">
-                        Experience seamless transportation with our network of verified drivers. Smart matching, instant booking, and secure rides.
-                      </p>
-                      <div className="flex flex-col sm:flex-row gap-4">
-                        <a
-                          href="/find-ride"
-                          className="group inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white text-lg font-medium rounded-lg hover:shadow-neon-hover transition-all duration-300"
-                        >
-                          <Search className="w-5 h-5 mr-2 group-hover:animate-pulse" />
-                          Find a Ride
-                        </a>
-                        <a
-                          href="/driver-dashboard"
-                          className="group inline-flex items-center justify-center px-8 py-4 glass-card text-white text-lg font-medium rounded-lg hover:neon-border transition-all duration-300"
-                        >
-                          <Car className="w-5 h-5 mr-2 group-hover:animate-pulse" />
-                          Offer a Ride
-                        </a>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Features Section */}
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-                    <div className="glass-card rounded-xl p-8 hover-float">
-                      <div className="w-14 h-14 bg-gradient-radial from-blue-500 to-blue-700 rounded-full flex items-center justify-center mb-6">
-                        <Search className="w-7 h-7 text-white" />
-                      </div>
-                      <h3 className="text-xl font-semibold mb-3 gradient-text">Smart Search</h3>
-                      <p className="text-gray-300">AI-powered ride matching for optimal routes and timing.</p>
-                    </div>
-                    <div className="glass-card rounded-xl p-8 hover-float">
-                      <div className="w-14 h-14 bg-gradient-radial from-green-500 to-green-700 rounded-full flex items-center justify-center mb-6">
-                        <MessageCircle className="w-7 h-7 text-white" />
-                      </div>
-                      <h3 className="text-xl font-semibold mb-3 gradient-text">Instant Connect</h3>
-                      <p className="text-gray-300">Real-time communication with drivers through secure channels.</p>
-                    </div>
-                    <div className="glass-card rounded-xl p-8 hover-float">
-                      <div className="w-14 h-14 bg-gradient-radial from-purple-500 to-purple-700 rounded-full flex items-center justify-center mb-6">
-                        <Zap className="w-7 h-7 text-white" />
-                      </div>
-                      <h3 className="text-xl font-semibold mb-3 gradient-text">Dynamic Pricing</h3>
-                      <p className="text-gray-300">Smart discounts and rewards for frequent riders.</p>
-                    </div>
-                  </div>
-
-                  {/* Top Drivers Section */}
-                  <TopDrivers drivers={drivers} />
-                </div>
-              </>
-            } />
+            <Route path="/" element={<Home />} />
             <Route path="/auth" element={<AuthPage />} />
+            
+            {/* Protected Routes */}
+            <Route
+              path="/find-ride"
+              element={
+                <PrivateRoute>
+                  <FindRide />
+                </PrivateRoute>
+              }
+            />
+            <Route
+              path="/request-ride"
+              element={
+                <PrivateRoute>
+                  <RequestRide />
+                </PrivateRoute>
+              }
+            />
             <Route
               path="/driver-dashboard"
               element={
                 <PrivateRoute>
                   <DriverDashboard drivers={drivers} setDrivers={setDrivers} />
-                </PrivateRoute>
-              }
-            />
-            <Route
-              path="/find-ride"
-              element={
-                <PrivateRoute>
-                  <FindRide drivers={drivers} />
                 </PrivateRoute>
               }
             />

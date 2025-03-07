@@ -96,6 +96,47 @@ export interface Database {
           created_at?: string
         }
       }
+      ride_requests: {
+        Row: {
+          id: string
+          rider_id: string
+          rider_name: string
+          contact: string
+          from_area: string
+          to_area: string
+          date: string
+          start_time: string
+          end_time: string
+          status: 'pending' | 'accepted' | 'completed'
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          rider_id: string
+          rider_name: string
+          contact: string
+          from_area: string
+          to_area: string
+          date: string
+          start_time: string
+          end_time: string
+          status?: 'pending' | 'accepted' | 'completed'
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          rider_id?: string
+          rider_name?: string
+          contact?: string
+          from_area?: string
+          to_area?: string
+          date?: string
+          start_time?: string
+          end_time?: string
+          status?: 'pending' | 'accepted' | 'completed'
+          created_at?: string
+        }
+      }
     }
   }
 } 

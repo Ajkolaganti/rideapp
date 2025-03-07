@@ -20,7 +20,11 @@ interface Driver {
   }[];
 }
 
-export function TopDrivers() {
+interface TopDriversProps {
+  className?: string;
+}
+
+export function TopDrivers({ className = "mt-16" }: TopDriversProps) {
   const [drivers, setDrivers] = useState<Driver[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -28,18 +32,15 @@ export function TopDrivers() {
     const fetchAvailableDrivers = async () => {
       try {
         const now = new Date();
-        const thirtyMinutesFromNow = addMinutes(now, 30);
         const currentTime = format(now, 'HH:mm:ss');
-        const thirtyMinLaterTime = format(thirtyMinutesFromNow, 'HH:mm:ss');
         const today = format(now, 'yyyy-MM-dd');
 
         console.log('Fetching drivers with params:', {
           currentTime,
-          thirtyMinLaterTime,
           today
         });
 
-        // First, get all drivers with their availability
+        // Get all drivers with their availability for today
         const { data, error } = await supabase
           .from('drivers')
           .select(`
@@ -59,8 +60,7 @@ export function TopDrivers() {
             )
           `)
           .eq('availability.date', today)
-          .gte('availability.start_time', currentTime)
-          .lte('availability.start_time', thirtyMinLaterTime)
+          .gte('availability.end_time', currentTime) // Only show future end times
           .order('rides_offered', { ascending: false });
 
         if (error) {
@@ -70,7 +70,7 @@ export function TopDrivers() {
 
         console.log('Raw database response:', data);
 
-        // Filter out drivers with no valid availability
+        // Filter out drivers with no valid availability or who are on a ride
         const availableDrivers = data?.filter(driver => 
           driver.availability && 
           driver.availability.length > 0 &&
@@ -90,15 +90,14 @@ export function TopDrivers() {
 
     // Set up real-time subscription
     const subscription = supabase
-      .channel('available_drivers')
+      .channel('drivers_changes')
       .on('postgres_changes', 
         { 
           event: '*', 
           schema: 'public', 
           table: 'drivers' 
         }, 
-        (payload) => {
-          console.log('Real-time update received:', payload);
+        () => {
           fetchAvailableDrivers();
         }
       )
@@ -111,110 +110,55 @@ export function TopDrivers() {
 
   if (loading) {
     return (
-      <div className="text-center">
-        <div className="glass-card inline-block p-4 rounded-xl">
-          <Activity className="w-6 h-6 text-neon-blue animate-pulse" />
-        </div>
-      </div>
-    );
-  }
-
-  if (drivers.length === 0) {
-    return (
-      <div className="text-center">
-        <h2 className="text-3xl font-bold gradient-text mb-6">
-          Available Drivers
-        </h2>
-        <div className="glass-card p-8 max-w-md mx-auto">
-          <p className="text-gray-400">
-            No drivers available in the next 30 minutes. Please check back later.
-          </p>
+      <div className={`${className}`}>
+        <div className="glass-card rounded-2xl p-6 text-center">
+          <div className="animate-pulse text-neon-blue">Loading available drivers...</div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="relative">
-      <div 
-        className="absolute inset-0 bg-cover bg-center"
-        style={{
-          backgroundImage: 'url(/car-ride.jpg)',
-        }}
-      >
-        <div className="absolute inset-0 bg-deep-space/95 backdrop-blur-sm" />
-      </div>
-      
-      <div className="relative z-10">
-        <div className="mt-16">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold gradient-text mb-4">
-              Available Drivers
-            </h2>
-            <p className="text-gray-400">
-              Drivers available in the next 30 minutes
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {drivers.map((driver) => (
-              <div key={driver.id} className="glass-card rounded-2xl p-6 hover-float">
-                <div className="flex items-center mb-6">
-                  <div className="w-14 h-14 rounded-full bg-gradient-to-r from-blue-600/20 to-purple-600/20 
-                    flex items-center justify-center">
-                    <span className="text-2xl font-semibold text-neon-blue">
-                      {driver.name.charAt(0)}
-                    </span>
-                  </div>
-                  <div className="ml-4">
-                    <div className="flex items-center space-x-2">
-                      <h3 className="text-lg font-semibold text-gray-100">
-                        {driver.name}
-                      </h3>
-                      {driver.is_subscribed && (
-                        <Shield className="w-4 h-4 text-neon-blue" />
-                      )}
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <div className="flex items-center text-yellow-400">
-                        <Star className="w-4 h-4 fill-current" />
-                        <span className="ml-1 text-sm">{driver.rides_offered}</span>
-                      </div>
-                      {driver.is_on_ride && (
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs 
-                          font-medium bg-green-900/20 text-green-400">
-                          <Activity className="w-3 h-3 mr-1" />
-                          On a ride
-                        </span>
-                      )}
-                    </div>
-                  </div>
+    <div className={`${className}`}>
+      <h2 className="text-2xl font-bold gradient-text mb-6">Available Drivers</h2>
+      {drivers.length === 0 ? (
+        <div className="glass-card rounded-2xl p-6 text-center">
+          <p className="text-gray-400">No drivers available right now. Please check back later.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {drivers.map((driver) => (
+            <div key={driver.id} className="glass-card rounded-2xl p-6 hover-float">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-100">{driver.name}</h3>
+                  <p className="text-sm text-gray-400">{driver.car_model}</p>
                 </div>
-
-                <div className="space-y-3">
-                  <div className="flex items-center text-gray-300">
-                    <Car className="w-4 h-4 mr-2 text-neon-blue" />
-                    {driver.car_model}
-                  </div>
-
-                  {driver.availability?.[0] && (
-                    <>
-                      <div className="flex items-center text-gray-300">
-                        <MapPin className="w-4 h-4 mr-2 text-neon-blue" />
-                        {driver.availability[0].from_area} → {driver.availability[0].to_area}
-                      </div>
-                      <div className="flex items-center text-gray-300">
-                        <Clock className="w-4 h-4 mr-2 text-neon-blue" />
-                        Available at {format(parseISO(`2000-01-01T${driver.availability[0].start_time}`), 'h:mm a')}
-                      </div>
-                    </>
-                  )}
+                <div className="flex items-center text-neon-blue">
+                  <Star className="w-4 h-4 mr-1" />
+                  <span>{driver.rides_offered} rides</span>
                 </div>
               </div>
-            ))}
-          </div>
+
+              <div className="space-y-4">
+                {driver.availability.map((slot) => (
+                  <div key={slot.id} className="space-y-2">
+                    <div className="flex items-center text-gray-300">
+                      <MapPin className="w-4 h-4 mr-2 text-neon-blue" />
+                      {slot.from_area} → {slot.to_area}
+                    </div>
+                    <div className="flex items-center text-gray-300">
+                      <Clock className="w-4 h-4 mr-2 text-neon-blue" />
+                      {format(parseISO(`2000-01-01T${slot.start_time}`), 'h:mm a')} - 
+                      {format(parseISO(`2000-01-01T${slot.end_time}`), 'h:mm a')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
-      </div>
+      )}
     </div>
   );
 }

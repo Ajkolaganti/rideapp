@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { Car, Menu, X, LogOut } from 'lucide-react';
 import { useAuth } from './auth/AuthProvider';
 import { supabase } from '../lib/supabase';
@@ -9,6 +9,7 @@ export function Navigation() {
   const [isDriver, setIsDriver] = useState(false);
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
     const checkDriverStatus = async () => {
@@ -52,154 +53,58 @@ export function Navigation() {
   };
 
   return (
-    <nav className="fixed w-full top-0 z-50">
-      <div className="glass-card backdrop-blur-lg border-b border-white/5">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16">
-            {/* Logo and brand */}
-            <div className="flex items-center">
-              <Link to="/" className="flex items-center group">
-                <div className="p-2 rounded-full bg-gradient-to-r from-blue-600/20 to-purple-600/20">
-                  <Car className="w-6 h-6 text-neon-blue group-hover:animate-pulse" />
-                </div>
-                <span className="ml-2 text-xl font-bold gradient-text">RideMate</span>
-              </Link>
-            </div>
+    <nav className="fixed top-0 left-0 right-0 z-50 bg-deep-space/80 backdrop-blur-lg border-b border-white/5">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          <Link to="/" className="flex items-center space-x-2">
+            <Car className="w-8 h-8 text-neon-blue" />
+            <span className="text-xl font-bold gradient-text">RideMate</span>
+          </Link>
 
-            {/* Desktop navigation */}
-            <div className="hidden md:flex md:items-center md:space-x-6">
-              {user ? (
-                <>
-                  <Link
-                    to="/find-ride"
-                    className="nav-link hover:text-neon-blue transition-colors"
-                  >
-                    Find a Ride
-                  </Link>
-                  {!isDriver && (
+          <div className="flex items-center space-x-4">
+            {user ? (
+              <>
+                {!isDriver && (
+                  <>
                     <Link
-                      to="/driver-dashboard"
-                      className="nav-link hover:text-neon-blue transition-colors"
+                      to="/find-ride"
+                      className={`nav-link ${location.pathname === '/find-ride' ? 'text-neon-blue' : ''}`}
                     >
-                      Offer Rides
+                      Find Ride
                     </Link>
-                  )}
-                  <button
-                    onClick={handleSignOut}
-                    className="flex items-center px-4 py-2 rounded-lg bg-deep-space/50 
-                    text-gray-300 hover:text-neon-blue hover:bg-deep-space/70 transition-all duration-200"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => handleProtectedRoute('/find-ride')}
-                    className="nav-link hover:text-neon-blue transition-colors"
-                  >
-                    Find a Ride
-                  </button>
-                  <button
-                    onClick={() => handleProtectedRoute('/driver-dashboard')}
-                    className="nav-link hover:text-neon-blue transition-colors"
-                  >
-                    Offer Rides
-                  </button>
-                  <Link
-                    to="/auth"
-                    className="px-4 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-purple-600 
-                    text-white hover:shadow-neon-hover transition-all duration-200"
-                  >
-                    Sign In
-                  </Link>
-                </>
-              )}
-            </div>
-
-            {/* Mobile menu button */}
-            <div className="flex items-center md:hidden">
-              <button
-                onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="p-2 rounded-lg bg-deep-space/50 text-gray-300 
-                hover:text-neon-blue hover:bg-deep-space/70 transition-all duration-200"
-              >
-                {isMenuOpen ? (
-                  <X className="w-6 h-6" />
-                ) : (
-                  <Menu className="w-6 h-6" />
+                    <Link
+                      to="/request-ride"
+                      className={`nav-link ${location.pathname === '/request-ride' ? 'text-neon-blue' : ''}`}
+                    >
+                      Request Ride
+                    </Link>
+                  </>
                 )}
-              </button>
-            </div>
+                {isDriver && (
+                  <Link
+                    to="/driver-dashboard"
+                    className={`nav-link ${location.pathname === '/driver-dashboard' ? 'text-neon-blue' : ''}`}
+                  >
+                    Driver Dashboard
+                  </Link>
+                )}
+                <button
+                  onClick={signOut}
+                  className="nav-link"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <Link
+                to="/auth"
+                className="auth-button"
+              >
+                Sign In
+              </Link>
+            )}
           </div>
         </div>
-
-        {/* Mobile menu */}
-        {isMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1">
-              {user ? (
-                <>
-                  <Link
-                    to="/find-ride"
-                    className="mobile-nav-link"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Find a Ride
-                  </Link>
-                  {!isDriver && (
-                    <Link
-                      to="/driver-dashboard"
-                      className="mobile-nav-link"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      Offer Rides
-                    </Link>
-                  )}
-                  <button
-                    onClick={() => {
-                      handleSignOut();
-                      setIsMenuOpen(false);
-                    }}
-                    className="w-full text-left mobile-nav-link flex items-center"
-                  >
-                    <LogOut className="w-4 h-4 mr-2" />
-                    Sign Out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <button
-                    onClick={() => {
-                      handleProtectedRoute('/find-ride');
-                      setIsMenuOpen(false);
-                    }}
-                    className="mobile-nav-link"
-                  >
-                    Find a Ride
-                  </button>
-                  <button
-                    onClick={() => {
-                      handleProtectedRoute('/driver-dashboard');
-                      setIsMenuOpen(false);
-                    }}
-                    className="mobile-nav-link"
-                  >
-                    Offer Rides
-                  </button>
-                  <Link
-                    to="/auth"
-                    className="mobile-nav-link bg-gradient-to-r from-blue-600 to-purple-600"
-                    onClick={() => setIsMenuOpen(false)}
-                  >
-                    Sign In
-                  </Link>
-                </>
-              )}
-            </div>
-          </div>
-        )}
       </div>
     </nav>
   );
